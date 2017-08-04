@@ -1,0 +1,55 @@
+{
+  "name": "qub-csv",
+  "version": "1.0.0",
+  "description": "A collection of classes and functions for interacting with CSV documents",
+  "main": "output/sources/csv",
+  "typings": "output/sources/csv",
+  "files": [
+    "output/sources/"
+  ],
+  "scripts": {
+    "build": "tsc -p .",
+    "prepublishOnly": "npm run build",
+    "test": "mocha --colors --require source-map-support/register --ui tdd output/tests/",
+    "coverage": "nyc npm test && open-cli output/coverage/csv.ts.html",
+    "travis-test": "npm run setup && npm run build && nyc --reporter=text-lcov npm test | coveralls",
+    "setup": "npm install"
+  },
+  "nyc": {
+    "reporter": [
+      "html",
+      "text-summary"
+    ],
+    "report-dir": "output/coverage/",
+    "temp-directory": "output/.nyc_output/",
+    "exclude": [
+      "output/tests"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danschultequb/qub-typescript-csv.git"
+  },
+  "keywords": [
+    "qub"
+  ],
+  "author": "Dan Schulte",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/danschultequb/qub-typescript-csv/issues"
+  },
+  "homepage": "https://github.com/danschultequb/qub-typescript-csv#readme",
+  "devDependencies": {
+    "@types/mocha": "2.2.41",
+    "@types/node": "8.0.19",
+    "coveralls": "2.13.1",
+    "mocha": "3.5.0",
+    "nyc": "11.1.0",
+    "open-cli": "1.0.5",
+    "source-map-support": "0.4.15",
+    "typescript": "2.4.2"
+  },
+  "dependencies": {
+    "qub": "1.2.7"
+  }
+}
