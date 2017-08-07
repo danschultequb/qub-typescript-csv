@@ -4,7 +4,15 @@ import * as qub from "qub";
  * An individual token of a row. This can be either a cell, a comma, or a new line.
  */
 export class Token {
-    constructor(private _lexes: qub.Iterable<qub.Lex>) {
+    constructor(private _lexes: qub.Iterable<qub.Lex>, private _isSeparator: boolean) {
+    }
+
+    /**
+     * Is this token a separator within a row. Typically in a CSV this is a comma, but the parse can
+     * be configured so that this can be a semi-colon (;), a tab (\t), or a vertical bar (|).
+     */
+    public isSeparator(): boolean {
+        return this._isSeparator;
     }
 
     /**
@@ -32,6 +40,31 @@ export class Token {
  */
 export class Row {
     constructor(private _tokens: qub.Iterable<Token>) {
+    }
+
+    public getCells(): qub.Iterable<Token> {
+        const cells = new qub.ArrayList<Token>();
+
+        if (this._tokens) {
+            let previousTokenWasCell: boolean = false;
+            for (const token of this._tokens) {
+                if (token.isSeparator()) {
+                    if (!previousTokenWasCell) {
+                        cells.add(undefined);
+                    }
+                    previousTokenWasCell = false;
+                }
+                else if (token.isNewLine()) {
+                    previousTokenWasCell = false;
+                }
+                else {
+                    cells.add(token);
+                    previousTokenWasCell = true;
+                }
+            }
+        }
+
+        return cells;
     }
 
     /**
@@ -69,6 +102,7 @@ export function parseToken(lexes: qub.Iterator<qub.Lex>): Token {
     const tokenLexes = new qub.ArrayList<qub.Lex>();
     let tokenFinished: boolean = false;
     let isCell: boolean = false;
+    let isSeparator: boolean = false;
     while (lexes.hasCurrent() && !tokenFinished) {
 
         const currentLex: qub.Lex = lexes.getCurrent();
@@ -77,6 +111,7 @@ export function parseToken(lexes: qub.Iterator<qub.Lex>): Token {
                 if (!isCell) {
                     tokenLexes.add(currentLex);
                     lexes.next();
+                    isSeparator = true;
                 }
                 tokenFinished = true;
                 break;
@@ -98,7 +133,7 @@ export function parseToken(lexes: qub.Iterator<qub.Lex>): Token {
         }
     }
 
-    return new Token(tokenLexes);
+    return new Token(tokenLexes, isSeparator);
 }
 
 export function parseRow(lexes: qub.Iterator<qub.Lex>): Row {

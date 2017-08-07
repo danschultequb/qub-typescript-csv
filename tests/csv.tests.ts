@@ -10,37 +10,50 @@ function parseQubLexes(text: string, startIndex: number = 0): qub.Iterable<qub.L
 suite("csv", () => {
     suite("Token", () => {
         test("with undefined lexes", () => {
-            const token = new csv.Token(undefined);
+            const token = new csv.Token(undefined, false);
+            assert.deepStrictEqual(token.isSeparator(), false);
             assert.deepStrictEqual(token.isNewLine(), false);
             assert.deepStrictEqual(token.toString(), "");
         });
 
         test("with empty lexes", () => {
-            const token = new csv.Token(parseQubLexes(""));
+            const token = new csv.Token(parseQubLexes(""), false);
+            assert.deepStrictEqual(token.isSeparator(), false);
             assert.deepStrictEqual(token.isNewLine(), false);
             assert.deepStrictEqual(token.toString(), "");
         });
 
         test("with comma lex", () => {
-            const token = new csv.Token(parseQubLexes(","));
+            const token = new csv.Token(parseQubLexes(","), true);
+            assert.deepStrictEqual(token.isSeparator(), true);
+            assert.deepStrictEqual(token.isNewLine(), false);
+            assert.deepStrictEqual(token.toString(), ",");
+        });
+
+        test("with comma lex but not a separator", () => {
+            const token = new csv.Token(parseQubLexes(","), false);
+            assert.deepStrictEqual(token.isSeparator(), false);
             assert.deepStrictEqual(token.isNewLine(), false);
             assert.deepStrictEqual(token.toString(), ",");
         });
 
         test("with newline lex", () => {
-            const token = new csv.Token(parseQubLexes("\n"));
+            const token = new csv.Token(parseQubLexes("\n"), false);
+            assert.deepStrictEqual(token.isSeparator(), false);
             assert.deepStrictEqual(token.isNewLine(), true);
             assert.deepStrictEqual(token.toString(), "\n");
         });
 
         test("with carriage return and newline lex", () => {
-            const token = new csv.Token(parseQubLexes("\r\n"));
+            const token = new csv.Token(parseQubLexes("\r\n"), false);
+            assert.deepStrictEqual(token.isSeparator(), false);
             assert.deepStrictEqual(token.isNewLine(), true);
             assert.deepStrictEqual(token.toString(), "\r\n");
         });
 
         test("with cell data lexes", () => {
-            const token = new csv.Token(parseQubLexes("a1b2"));
+            const token = new csv.Token(parseQubLexes("a1b2"), false);
+            assert.deepStrictEqual(token.isSeparator(), false);
             assert.deepStrictEqual(token.isNewLine(), false);
             assert.deepStrictEqual(token.toString(), "a1b2");
         });
@@ -51,29 +64,50 @@ suite("csv", () => {
             return csv.parseToken(parseQubLexes(text, startIndex).iterate());
         }
 
+        function getCellsAsStrings(row: csv.Row): string[] {
+            return row.getCells().map((cell: csv.Token) => cell ? cell.toString() : undefined).toArray();
+        }
+
         test("with undefined tokens", () => {
             const row = new csv.Row(undefined);
+            assert.deepStrictEqual(getCellsAsStrings(row), []);
             assert.deepStrictEqual(row.toString(), "");
         });
 
         test("with empty tokens", () => {
             const row = new csv.Row(new qub.ArrayList<csv.Token>());
+            assert.deepStrictEqual(getCellsAsStrings(row), []);
             assert.deepStrictEqual(row.toString(), "");
         });
 
         test("with one cell token", () => {
             const row = new csv.Row(new qub.ArrayList<csv.Token>([parseToken("a")]));
+            assert.deepStrictEqual(getCellsAsStrings(row), ["a"]);
             assert.deepStrictEqual(row.toString(), "a");
         });
 
         test("with one comma token", () => {
             const row = new csv.Row(new qub.ArrayList<csv.Token>([parseToken(",")]));
+            assert.deepStrictEqual(getCellsAsStrings(row), [undefined]);
             assert.deepStrictEqual(row.toString(), ",");
         });
 
         test("with one newline token", () => {
             const row = new csv.Row(new qub.ArrayList<csv.Token>([parseToken("\n")]));
+            assert.deepStrictEqual(getCellsAsStrings(row), []);
             assert.deepStrictEqual(row.toString(), "\n");
+        });
+
+        test("with a cell token and a comma token", () => {
+            const row = new csv.Row(new qub.ArrayList<csv.Token>([parseToken("abc"), parseToken(",")]));
+            assert.deepStrictEqual(getCellsAsStrings(row), ["abc"]);
+            assert.deepStrictEqual(row.toString(), "abc,");
+        });
+
+        test("with a multiple cells and commas", () => {
+            const row = new csv.Row(new qub.ArrayList<csv.Token>([parseToken("abc"), parseToken(","), parseToken(","), parseToken("123"), parseToken(","), parseToken("   ")]));
+            assert.deepStrictEqual(getCellsAsStrings(row), ["abc", undefined, "123", "   "]);
+            assert.deepStrictEqual(row.toString(), "abc,,123,   ");
         });
     });
 
