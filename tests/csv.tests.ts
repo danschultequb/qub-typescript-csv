@@ -7,6 +7,10 @@ function parseQubLexes(text: string, startIndex: number = 0): qub.Iterable<qub.L
     return new qub.Lexer(text, startIndex).toArrayList();
 }
 
+function toString(value: { toString(): string }): string {
+    return value ? value.toString() : undefined;
+}
+
 suite("csv", () => {
     suite("Token", () => {
         test("with undefined lexes", () => {
@@ -64,91 +68,263 @@ suite("csv", () => {
             return csv.parseToken(parseQubLexes(text, startIndex).iterate());
         }
 
-        function getCellsAsStrings(row: csv.Row): string[] {
-            return row.getCells().map((cell: csv.Token) => cell ? cell.toString() : undefined).toArray();
+        function getRowCellsAsStrings(row: csv.Row): string[] {
+            return row.getCells().map(toString).toArray();
         }
 
         test("with undefined tokens", () => {
             const row = new csv.Row(undefined);
-            assert.deepStrictEqual(getCellsAsStrings(row), []);
+            assert.deepStrictEqual(getRowCellsAsStrings(row), []);
             assert.deepStrictEqual(row.toString(), "");
+            assert.deepStrictEqual(row.getCell(-1), undefined);
+            assert.deepStrictEqual(row.getCell(0), undefined);
+            assert.deepStrictEqual(row.getCell(1), undefined);
+            assert.deepStrictEqual(row.getCellCount(), 0);
         });
 
         test("with empty tokens", () => {
             const row = new csv.Row(new qub.ArrayList<csv.Token>());
-            assert.deepStrictEqual(getCellsAsStrings(row), []);
+            assert.deepStrictEqual(getRowCellsAsStrings(row), []);
             assert.deepStrictEqual(row.toString(), "");
+            assert.deepStrictEqual(row.getCell(-1), undefined);
+            assert.deepStrictEqual(row.getCell(0), undefined);
+            assert.deepStrictEqual(row.getCell(1), undefined);
+            assert.deepStrictEqual(row.getCellCount(), 0);
         });
 
         test("with one cell token", () => {
             const row = new csv.Row(new qub.ArrayList<csv.Token>([parseToken("a")]));
-            assert.deepStrictEqual(getCellsAsStrings(row), ["a"]);
+            assert.deepStrictEqual(getRowCellsAsStrings(row), ["a"]);
             assert.deepStrictEqual(row.toString(), "a");
+            assert.deepStrictEqual(row.getCell(-1), undefined);
+            assert.deepStrictEqual(row.getCell(0).toString(), "a");
+            assert.deepStrictEqual(row.getCell(1), undefined);
+            assert.deepStrictEqual(row.getCellCount(), 1);
         });
 
         test("with one comma token", () => {
             const row = new csv.Row(new qub.ArrayList<csv.Token>([parseToken(",")]));
-            assert.deepStrictEqual(getCellsAsStrings(row), [undefined]);
+            assert.deepStrictEqual(getRowCellsAsStrings(row), ["", ""]);
             assert.deepStrictEqual(row.toString(), ",");
+            assert.deepStrictEqual(row.getCell(-1), undefined);
+            assert.deepStrictEqual(row.getCell(0).toString(), "");
+            assert.deepStrictEqual(row.getCell(1).toString(), "");
+            assert.deepStrictEqual(row.getCell(2), undefined);
+            assert.deepStrictEqual(row.getCellCount(), 2);
         });
 
         test("with one newline token", () => {
             const row = new csv.Row(new qub.ArrayList<csv.Token>([parseToken("\n")]));
-            assert.deepStrictEqual(getCellsAsStrings(row), []);
+            assert.deepStrictEqual(getRowCellsAsStrings(row), []);
             assert.deepStrictEqual(row.toString(), "\n");
+            assert.deepStrictEqual(row.getCell(-1), undefined);
+            assert.deepStrictEqual(row.getCell(0), undefined);
+            assert.deepStrictEqual(row.getCell(1), undefined);
+            assert.deepStrictEqual(row.getCellCount(), 0);
         });
 
         test("with a cell token and a comma token", () => {
             const row = new csv.Row(new qub.ArrayList<csv.Token>([parseToken("abc"), parseToken(",")]));
-            assert.deepStrictEqual(getCellsAsStrings(row), ["abc"]);
+            assert.deepStrictEqual(getRowCellsAsStrings(row), ["abc", ""]);
             assert.deepStrictEqual(row.toString(), "abc,");
+            assert.deepStrictEqual(row.getCell(-1), undefined);
+            assert.deepStrictEqual(row.getCell(0).toString(), "abc");
+            assert.deepStrictEqual(row.getCell(1).toString(), "");
+            assert.deepStrictEqual(row.getCell(2), undefined);
+            assert.deepStrictEqual(row.getCellCount(), 2);
         });
 
         test("with a multiple cells and commas", () => {
             const row = new csv.Row(new qub.ArrayList<csv.Token>([parseToken("abc"), parseToken(","), parseToken(","), parseToken("123"), parseToken(","), parseToken("   ")]));
-            assert.deepStrictEqual(getCellsAsStrings(row), ["abc", undefined, "123", "   "]);
+            assert.deepStrictEqual(getRowCellsAsStrings(row), ["abc", "", "123", "   "]);
             assert.deepStrictEqual(row.toString(), "abc,,123,   ");
+            assert.deepStrictEqual(row.getCell(-1), undefined);
+            assert.deepStrictEqual(row.getCell(0).toString(), "abc");
+            assert.deepStrictEqual(row.getCell(1).toString(), "");
+            assert.deepStrictEqual(row.getCell(2).toString(), "123");
+            assert.deepStrictEqual(row.getCell(3).toString(), "   ");
+            assert.deepStrictEqual(row.getCell(4), undefined);
+            assert.deepStrictEqual(row.getCellCount(), 4);
         });
     });
 
-    suite("Table", () => {
+    suite("Column", () => {
+        function getColumnCellsAsStrings(column: csv.Column): string[] {
+            return column.getCells().map(toString).toArray();
+        }
+
+        test("with undefined document", () => {
+            const document: csv.Document = csv.parse("");
+            const column = new csv.Column(undefined, 2);
+            assert.deepStrictEqual(column.getCell(-1), undefined);
+            assert.deepStrictEqual(column.getCell(0), undefined);
+            assert.deepStrictEqual(column.getCell(1), undefined);
+            assert.deepStrictEqual(column.getCellCount(), 0);
+            assert.deepStrictEqual(column.toString(), "");
+        });
+
+        test("with undefined columnIndex", () => {
+            const document: csv.Document = csv.parse("");
+            const column = new csv.Column(document, undefined);
+            assert.deepStrictEqual(getColumnCellsAsStrings(column), []);
+            assert.deepStrictEqual(column.getCell(-1), undefined);
+            assert.deepStrictEqual(column.getCell(0), undefined);
+            assert.deepStrictEqual(column.getCell(1), undefined);
+            assert.deepStrictEqual(column.getCellCount(), 0);
+            assert.deepStrictEqual(column.toString(), "");
+        });
+
+        test("with -1 columnIndex", () => {
+            const document: csv.Document = csv.parse("");
+            const column = new csv.Column(document, -1);
+            assert.deepStrictEqual(getColumnCellsAsStrings(column), []);
+            assert.deepStrictEqual(column.getCell(-1), undefined);
+            assert.deepStrictEqual(column.getCell(0), undefined);
+            assert.deepStrictEqual(column.getCell(1), undefined);
+            assert.deepStrictEqual(column.getCellCount(), 0);
+            assert.deepStrictEqual(column.toString(), "");
+        });
+
+        test("with 0 columnIndex and empty document", () => {
+            const document: csv.Document = csv.parse("");
+            const column = new csv.Column(document, 0);
+            assert.deepStrictEqual(getColumnCellsAsStrings(column), []);
+            assert.deepStrictEqual(column.getCell(-1), undefined);
+            assert.deepStrictEqual(column.getCell(0), undefined);
+            assert.deepStrictEqual(column.getCell(1), undefined);
+            assert.deepStrictEqual(column.getCellCount(), 0);
+            assert.deepStrictEqual(column.toString(), "");
+        });
+
+        test("with 0 columnIndex and non-empty document", () => {
+            const document: csv.Document = csv.parse("a,b,c\n1,2,3\n ,\t,  ");
+            const column = new csv.Column(document, 0);
+            assert.deepStrictEqual(getColumnCellsAsStrings(column), ["a", "1", " "]);
+            assert.deepStrictEqual(column.getCell(-1), undefined);
+            assert.deepStrictEqual(column.getCell(0).toString(), "a");
+            assert.deepStrictEqual(column.getCell(1).toString(), "1");
+            assert.deepStrictEqual(column.getCell(2).toString(), " ");
+            assert.deepStrictEqual(column.getCell(3), undefined);
+            assert.deepStrictEqual(column.getCellCount(), 3);
+            assert.deepStrictEqual(column.toString(), "a,1, ");
+        });
+
+        test("with 1 columnIndex and non-empty document", () => {
+            const document: csv.Document = csv.parse("a,b,c\n1,2,3\n ,\t,  ");
+            const column = new csv.Column(document, 1);
+            assert.deepStrictEqual(getColumnCellsAsStrings(column), ["b", "2", "\t"]);
+            assert.deepStrictEqual(column.getCell(-1), undefined);
+            assert.deepStrictEqual(column.getCell(0).toString(), "b");
+            assert.deepStrictEqual(column.getCell(1).toString(), "2");
+            assert.deepStrictEqual(column.getCell(2).toString(), "\t");
+            assert.deepStrictEqual(column.getCell(3), undefined);
+            assert.deepStrictEqual(column.getCellCount(), 3);
+            assert.deepStrictEqual(column.toString(), "b,2,\t");
+        });
+
+        test("with 2 columnIndex and non-empty document", () => {
+            const document: csv.Document = csv.parse("a,b,c\n1,2,3\n ,\t,  ");
+            const column = new csv.Column(document, 2);
+            assert.deepStrictEqual(getColumnCellsAsStrings(column), ["c", "3", "  "]);
+            assert.deepStrictEqual(column.getCell(-1), undefined);
+            assert.deepStrictEqual(column.getCell(0).toString(), "c");
+            assert.deepStrictEqual(column.getCell(1).toString(), "3");
+            assert.deepStrictEqual(column.getCell(2).toString(), "  ");
+            assert.deepStrictEqual(column.getCell(3), undefined);
+            assert.deepStrictEqual(column.getCellCount(), 3);
+            assert.deepStrictEqual(column.toString(), "c,3,  ");
+        });
+
+        test("with 3 columnIndex and non-empty document", () => {
+            const document: csv.Document = csv.parse("a,b,c\n1,2,3\n ,\t,  ");
+            const column = new csv.Column(document, 3);
+            assert.deepStrictEqual(getColumnCellsAsStrings(column), []);
+            assert.deepStrictEqual(column.getCell(-1), undefined);
+            assert.deepStrictEqual(column.getCell(0), undefined);
+            assert.deepStrictEqual(column.getCell(1), undefined);
+            assert.deepStrictEqual(column.getCellCount(), 0);
+            assert.deepStrictEqual(column.toString(), "");
+        });
+    });
+
+    suite("Document", () => {
         function parseRow(text: string, startIndex: number = 0): csv.Row {
             return csv.parseRow(parseQubLexes(text, startIndex).iterate());
         }
 
+        function getRowsAsStrings(document: csv.Document): string[] {
+            return document.getRows().map(toString).toArray();
+        }
+
+        function getColumnsAsStrings(document: csv.Document): string[] {
+            return document.getColumns().map(toString).toArray();
+        }
+
         test("with undefined rows", () => {
-            const table = new csv.Table(undefined);
-            assert.deepStrictEqual(table.toString(), "");
+            const document = new csv.Document(undefined);
+            assert.deepStrictEqual(document.toString(), "");
+            assert.deepStrictEqual(getRowsAsStrings(document), []);
+            assert.deepStrictEqual(getColumnsAsStrings(document), []);
+            assert.deepStrictEqual(getColumnsAsStrings(document), []);
         });
 
         test("with empty rows", () => {
-            const table = new csv.Table(new qub.ArrayList<csv.Row>());
-            assert.deepStrictEqual(table.toString(), "");
+            const document = new csv.Document(new qub.ArrayList<csv.Row>());
+            assert.deepStrictEqual(document.toString(), "");
+            assert.deepStrictEqual(getRowsAsStrings(document), []);
+            assert.deepStrictEqual(getColumnsAsStrings(document), []);
+            assert.deepStrictEqual(getColumnsAsStrings(document), []);
         });
 
-        function tableTest(tableText: string): void {
-            test(`with ${qub.escapeAndQuote(tableText)}`, () => {
-                const rowTexts: string[] = tableText.split("\n");
+        function documentTest(documentText: string): void {
+            test(`with ${qub.escapeAndQuote(documentText)}`, () => {
+                const rowTexts: string[] = documentText.split("\n");
                 const rows = new qub.ArrayList<csv.Row>();
                 let rowStart: number = 0;
-                for (let rowEnd: number = 0; rowEnd < tableText.length; ++rowEnd) {
-                    if (tableText[rowEnd] === "\n") {
-                        const rowText: string = tableText.substring(rowStart, rowEnd + 1);
+                for (let rowEnd: number = 0; rowEnd < documentText.length; ++rowEnd) {
+                    if (documentText[rowEnd] === "\n") {
+                        const rowText: string = documentText.substring(rowStart, rowEnd + 1);
                         rows.add(parseRow(rowText, rowStart));
                         rowStart = rowEnd + 1;
                     }
                 }
-                rows.add(parseRow(tableText.substring(rowStart, tableText.length)));
+                rows.add(parseRow(documentText.substring(rowStart, documentText.length)));
 
-                const table = new csv.Table(rows);
-                assert.deepStrictEqual(table.toString(), tableText);
+                const document = new csv.Document(rows);
+                assert.deepStrictEqual(document.toString(), documentText);
+                assert.deepStrictEqual(getRowsAsStrings(document), rows.map(toString).toArray());
+                assert.deepStrictEqual(document.getRowCount(), rows.getCount());
+
+                for (let i = -1; i <= document.getRowCount(); ++i) {
+                    const row: csv.Row = document.getRow(i);
+
+                    if (0 <= i && i < document.getRowCount()) {
+                        const expectedRow: csv.Row = rows.get(i);
+                        assert.deepStrictEqual(row.toString(), expectedRow.toString());
+                    }
+                    else {
+                        assert.deepStrictEqual(row, undefined);
+                    }
+                }
+
+                for (let i = -1; i <= document.getColumnCount(); ++i) {
+                    const column: csv.Column = document.getColumn(i);
+
+                    if (0 <= i && i < document.getColumnCount()) {
+                        const expectedColumn = new csv.Column(document, i);
+                        assert.deepStrictEqual(column.toString(), expectedColumn.toString());
+                    }
+                    else {
+                        assert.deepStrictEqual(column, undefined);
+                    }
+                }
             });
         }
 
-        tableTest("")
-        tableTest("  ");
-        tableTest("abc");
-        tableTest("1234");
+        documentTest("")
+        documentTest("  ");
+        documentTest("abc");
+        documentTest("1234");
     });
 
     suite("parseToken()", () => {
@@ -216,8 +392,8 @@ suite("csv", () => {
     suite("parse()", () => {
         function parseTest(text: string): void {
             test(`with ${qub.escapeAndQuote(text)}`, () => {
-                const table: csv.Table = csv.parse(text);
-                assert.deepStrictEqual(table.toString(), text);
+                const document: csv.Document = csv.parse(text);
+                assert.deepStrictEqual(document.toString(), text);
             });
         }
 
