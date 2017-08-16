@@ -18,6 +18,8 @@ suite("csv", () => {
             assert.deepStrictEqual(token.isSeparator(), false);
             assert.deepStrictEqual(token.isNewLine(), false);
             assert.deepStrictEqual(token.toString(), "");
+            assert.deepStrictEqual(token.getStartIndex(), undefined);
+            assert.deepStrictEqual(token.getAfterEndIndex(), undefined);
         });
 
         test("with empty lexes", () => {
@@ -25,6 +27,8 @@ suite("csv", () => {
             assert.deepStrictEqual(token.isSeparator(), false);
             assert.deepStrictEqual(token.isNewLine(), false);
             assert.deepStrictEqual(token.toString(), "");
+            assert.deepStrictEqual(token.getStartIndex(), undefined);
+            assert.deepStrictEqual(token.getAfterEndIndex(), undefined);
         });
 
         test("with comma lex", () => {
@@ -32,6 +36,8 @@ suite("csv", () => {
             assert.deepStrictEqual(token.isSeparator(), true);
             assert.deepStrictEqual(token.isNewLine(), false);
             assert.deepStrictEqual(token.toString(), ",");
+            assert.deepStrictEqual(token.getStartIndex(), 0);
+            assert.deepStrictEqual(token.getAfterEndIndex(), 1);
         });
 
         test("with comma lex but not a separator", () => {
@@ -39,6 +45,8 @@ suite("csv", () => {
             assert.deepStrictEqual(token.isSeparator(), false);
             assert.deepStrictEqual(token.isNewLine(), false);
             assert.deepStrictEqual(token.toString(), ",");
+            assert.deepStrictEqual(token.getStartIndex(), 0);
+            assert.deepStrictEqual(token.getAfterEndIndex(), 1);
         });
 
         test("with newline lex", () => {
@@ -46,6 +54,8 @@ suite("csv", () => {
             assert.deepStrictEqual(token.isSeparator(), false);
             assert.deepStrictEqual(token.isNewLine(), true);
             assert.deepStrictEqual(token.toString(), "\n");
+            assert.deepStrictEqual(token.getStartIndex(), 0);
+            assert.deepStrictEqual(token.getAfterEndIndex(), 1);
         });
 
         test("with carriage return and newline lex", () => {
@@ -53,6 +63,8 @@ suite("csv", () => {
             assert.deepStrictEqual(token.isSeparator(), false);
             assert.deepStrictEqual(token.isNewLine(), true);
             assert.deepStrictEqual(token.toString(), "\r\n");
+            assert.deepStrictEqual(token.getStartIndex(), 0);
+            assert.deepStrictEqual(token.getAfterEndIndex(), 2);
         });
 
         test("with cell data lexes", () => {
@@ -60,6 +72,8 @@ suite("csv", () => {
             assert.deepStrictEqual(token.isSeparator(), false);
             assert.deepStrictEqual(token.isNewLine(), false);
             assert.deepStrictEqual(token.toString(), "a1b2");
+            assert.deepStrictEqual(token.getStartIndex(), 0);
+            assert.deepStrictEqual(token.getAfterEndIndex(), 4);
         });
     });
 
@@ -80,6 +94,16 @@ suite("csv", () => {
             assert.deepStrictEqual(row.getCell(0), undefined);
             assert.deepStrictEqual(row.getCell(1), undefined);
             assert.deepStrictEqual(row.getCellCount(), 0);
+            assert.deepStrictEqual(row.getStartIndex(), undefined);
+            assert.deepStrictEqual(row.getAfterEndIndex(), undefined);
+            assert.deepStrictEqual(row.endsWithNewLine(), false);
+            assert.deepStrictEqual(row.getColumnIndex(undefined), undefined);
+            assert.deepStrictEqual(row.getColumnIndex(null), undefined);
+            for (let i = -1; i <= row.toString().length + 1; ++i) {
+                const actualColumnIndex: number = row.getColumnIndex(i);
+                const expectedColumnIndex: number = i === 0 ? 0 : undefined;
+                assert.deepStrictEqual(actualColumnIndex, expectedColumnIndex, `For characterIndex ${i}, the expected columnIndex is ${expectedColumnIndex}, not ${actualColumnIndex}.`);
+            }
         });
 
         test("with empty tokens", () => {
@@ -90,6 +114,16 @@ suite("csv", () => {
             assert.deepStrictEqual(row.getCell(0), undefined);
             assert.deepStrictEqual(row.getCell(1), undefined);
             assert.deepStrictEqual(row.getCellCount(), 0);
+            assert.deepStrictEqual(row.getStartIndex(), undefined);
+            assert.deepStrictEqual(row.getAfterEndIndex(), undefined);
+            assert.deepStrictEqual(row.endsWithNewLine(), false);
+            assert.deepStrictEqual(row.getColumnIndex(undefined), undefined);
+            assert.deepStrictEqual(row.getColumnIndex(null), undefined);
+            for (let i = -1; i <= row.toString().length + 1; ++i) {
+                const actualColumnIndex: number = row.getColumnIndex(i);
+                const expectedColumnIndex: number = i === 0 ? 0 : undefined;
+                assert.deepStrictEqual(actualColumnIndex, expectedColumnIndex, `For characterIndex ${i}, the expected columnIndex is ${expectedColumnIndex}, not ${actualColumnIndex}.`);
+            }
         });
 
         test("with one cell token", () => {
@@ -100,6 +134,18 @@ suite("csv", () => {
             assert.deepStrictEqual(row.getCell(0).toString(), "a");
             assert.deepStrictEqual(row.getCell(1), undefined);
             assert.deepStrictEqual(row.getCellCount(), 1);
+            assert.deepStrictEqual(row.getStartIndex(), 0);
+            assert.deepStrictEqual(row.getAfterEndIndex(), 1);
+            assert.deepStrictEqual(row.endsWithNewLine(), false);
+            assert.deepStrictEqual(row.getColumnIndex(undefined), undefined);
+            assert.deepStrictEqual(row.getColumnIndex(null), undefined);
+            for (let i = -1; i <= row.toString().length + 1; ++i) {
+                const actualColumnIndex: number = row.getColumnIndex(i);
+                const expectedColumnIndex: number =
+                    0 <= i && i <= 1 ? 0 :
+                        undefined;
+                assert.deepStrictEqual(actualColumnIndex, expectedColumnIndex, `For characterIndex ${i}, the expected columnIndex is ${expectedColumnIndex}, not ${actualColumnIndex}.`);
+            }
         });
 
         test("with one comma token", () => {
@@ -111,6 +157,19 @@ suite("csv", () => {
             assert.deepStrictEqual(row.getCell(1).toString(), "");
             assert.deepStrictEqual(row.getCell(2), undefined);
             assert.deepStrictEqual(row.getCellCount(), 2);
+            assert.deepStrictEqual(row.getStartIndex(), 0);
+            assert.deepStrictEqual(row.getAfterEndIndex(), 1);
+            assert.deepStrictEqual(row.endsWithNewLine(), false);
+            assert.deepStrictEqual(row.getColumnIndex(undefined), undefined);
+            assert.deepStrictEqual(row.getColumnIndex(null), undefined);
+            for (let i = -1; i <= row.toString().length + 1; ++i) {
+                const actualColumnIndex: number = row.getColumnIndex(i);
+                const expectedColumnIndex: number =
+                    i === 0 ? 0 :
+                        i === 1 ? 1 :
+                            undefined;
+                assert.deepStrictEqual(actualColumnIndex, expectedColumnIndex, `For characterIndex ${i}, the expected columnIndex is ${expectedColumnIndex}, not ${actualColumnIndex}.`);
+            }
         });
 
         test("with one newline token", () => {
@@ -121,10 +180,20 @@ suite("csv", () => {
             assert.deepStrictEqual(row.getCell(0), undefined);
             assert.deepStrictEqual(row.getCell(1), undefined);
             assert.deepStrictEqual(row.getCellCount(), 0);
+            assert.deepStrictEqual(row.getStartIndex(), 0);
+            assert.deepStrictEqual(row.getAfterEndIndex(), 1);
+            assert.deepStrictEqual(row.endsWithNewLine(), true);
+            assert.deepStrictEqual(row.getColumnIndex(undefined), undefined);
+            assert.deepStrictEqual(row.getColumnIndex(null), undefined);
+            for (let i = -1; i <= row.toString().length + 1; ++i) {
+                const actualColumnIndex: number = row.getColumnIndex(i);
+                const expectedColumnIndex: number = undefined;
+                assert.deepStrictEqual(actualColumnIndex, expectedColumnIndex, `For characterIndex ${i}, the expected columnIndex is ${expectedColumnIndex}, not ${actualColumnIndex}.`);
+            }
         });
 
         test("with a cell token and a comma token", () => {
-            const row = new csv.Row(new qub.ArrayList<csv.Token>([parseToken("abc"), parseToken(",")]));
+            const row = new csv.Row(new qub.ArrayList<csv.Token>([parseToken("abc"), parseToken(",", 3)]));
             assert.deepStrictEqual(getRowCellsAsStrings(row), ["abc", ""]);
             assert.deepStrictEqual(row.toString(), "abc,");
             assert.deepStrictEqual(row.getCell(-1), undefined);
@@ -132,10 +201,23 @@ suite("csv", () => {
             assert.deepStrictEqual(row.getCell(1).toString(), "");
             assert.deepStrictEqual(row.getCell(2), undefined);
             assert.deepStrictEqual(row.getCellCount(), 2);
+            assert.deepStrictEqual(row.getStartIndex(), 0);
+            assert.deepStrictEqual(row.getAfterEndIndex(), 4);
+            assert.deepStrictEqual(row.endsWithNewLine(), false);
+            assert.deepStrictEqual(row.getColumnIndex(undefined), undefined);
+            assert.deepStrictEqual(row.getColumnIndex(null), undefined);
+            for (let i = -1; i <= row.toString().length + 1; ++i) {
+                const actualColumnIndex: number = row.getColumnIndex(i);
+                const expectedColumnIndex: number =
+                    0 <= i && i <= 3 ? 0 :
+                        i === 4 ? 1 :
+                            undefined;
+                assert.deepStrictEqual(actualColumnIndex, expectedColumnIndex, `For characterIndex ${i}, the expected columnIndex is ${expectedColumnIndex}, not ${actualColumnIndex}.`);
+            }
         });
 
         test("with a multiple cells and commas", () => {
-            const row = new csv.Row(new qub.ArrayList<csv.Token>([parseToken("abc"), parseToken(","), parseToken(","), parseToken("123"), parseToken(","), parseToken("   ")]));
+            const row = new csv.Row(new qub.ArrayList<csv.Token>([parseToken("abc"), parseToken(",", 3), parseToken(",", 4), parseToken("123", 5), parseToken(",", 8), parseToken("   ", 9)]));
             assert.deepStrictEqual(getRowCellsAsStrings(row), ["abc", "", "123", "   "]);
             assert.deepStrictEqual(row.toString(), "abc,,123,   ");
             assert.deepStrictEqual(row.getCell(-1), undefined);
@@ -145,6 +227,21 @@ suite("csv", () => {
             assert.deepStrictEqual(row.getCell(3).toString(), "   ");
             assert.deepStrictEqual(row.getCell(4), undefined);
             assert.deepStrictEqual(row.getCellCount(), 4);
+            assert.deepStrictEqual(row.getStartIndex(), 0);
+            assert.deepStrictEqual(row.getAfterEndIndex(), 12);
+            assert.deepStrictEqual(row.endsWithNewLine(), false);
+            assert.deepStrictEqual(row.getColumnIndex(undefined), undefined);
+            assert.deepStrictEqual(row.getColumnIndex(null), undefined);
+            for (let i = -1; i <= row.toString().length + 1; ++i) {
+                const actualColumnIndex: number = row.getColumnIndex(i);
+                const expectedColumnIndex: number =
+                    0 <= i && i <= 3 ? 0 :
+                        i === 4 ? 1 :
+                            5 <= i && i <= 8 ? 2 :
+                                9 <= i && i <= 12 ? 3 :
+                                    undefined;
+                assert.deepStrictEqual(actualColumnIndex, expectedColumnIndex, `For characterIndex ${i}, the expected columnIndex is ${expectedColumnIndex}, not ${actualColumnIndex}.`);
+            }
         });
     });
 
@@ -266,6 +363,12 @@ suite("csv", () => {
             assert.deepStrictEqual(getRowsAsStrings(document), []);
             assert.deepStrictEqual(getColumnsAsStrings(document), []);
             assert.deepStrictEqual(getColumnsAsStrings(document), []);
+            for (let i = -1; i <= document.toString().length + 1; ++i) {
+                const actualRowIndex: number = document.getRowIndex(i);
+                const expectedRowIndex: number =
+                    i === 0 ? 0 : undefined;
+                assert.deepStrictEqual(actualRowIndex, expectedRowIndex, `For characterIndex ${i}, the expected row index is ${expectedRowIndex}, not ${actualRowIndex}.`);
+            }
         });
 
         test("with empty rows", () => {
@@ -274,6 +377,12 @@ suite("csv", () => {
             assert.deepStrictEqual(getRowsAsStrings(document), []);
             assert.deepStrictEqual(getColumnsAsStrings(document), []);
             assert.deepStrictEqual(getColumnsAsStrings(document), []);
+            for (let i = -1; i <= document.toString().length + 1; ++i) {
+                const actualRowIndex: number = document.getRowIndex(i);
+                const expectedRowIndex: number =
+                    i === 0 ? 0 : undefined;
+                assert.deepStrictEqual(actualRowIndex, expectedRowIndex, `For characterIndex ${i}, the expected row index is ${expectedRowIndex}, not ${actualRowIndex}.`);
+            }
         });
 
         function documentTest(documentText: string): void {
@@ -325,6 +434,60 @@ suite("csv", () => {
         documentTest("  ");
         documentTest("abc");
         documentTest("1234");
+
+        suite(`getRowIndex()`, () => {
+            test(`with ""`, () => {
+                const document: csv.Document = csv.parse("");
+                assert.deepStrictEqual(document.getRowIndex(undefined), undefined);
+                assert.deepStrictEqual(document.getRowIndex(null), undefined);
+                for (let i = -1; i <= document.toString().length + 1; ++i) {
+                    const actualRowIndex: number = document.getRowIndex(i);
+                    const expectedRowIndex: number = i === 0 ? 0 : undefined;
+                    assert.deepStrictEqual(actualRowIndex, expectedRowIndex, `For characterIndex ${i}, the expected row index is ${expectedRowIndex}, not ${actualRowIndex}.`);
+                }
+            });
+
+            test(`with "abc"`, () => {
+                const document: csv.Document = csv.parse("abc");
+                assert.deepStrictEqual(document.getRowIndex(undefined), undefined);
+                assert.deepStrictEqual(document.getRowIndex(null), undefined);
+                for (let i = -1; i <= document.toString().length + 1; ++i) {
+                    const actualRowIndex: number = document.getRowIndex(i);
+                    const expectedRowIndex: number =
+                        0 <= i && i <= 3 ? 0 :
+                            undefined;
+                    assert.deepStrictEqual(actualRowIndex, expectedRowIndex, `For characterIndex ${i}, the expected row index is ${expectedRowIndex}, not ${actualRowIndex}.`);
+                }
+            });
+
+            test(`with ${qub.escapeAndQuote("abc\n")}`, () => {
+                const document: csv.Document = csv.parse("abc\n");
+                assert.deepStrictEqual(document.getRowIndex(undefined), undefined);
+                assert.deepStrictEqual(document.getRowIndex(null), undefined);
+                for (let i = -1; i <= document.toString().length + 1; ++i) {
+                    const actualRowIndex: number = document.getRowIndex(i);
+                    const expectedRowIndex: number =
+                        0 <= i && i <= 3 ? 0 :
+                            i === 4 ? 1 :
+                                undefined;
+                    assert.deepStrictEqual(actualRowIndex, expectedRowIndex, `For characterIndex ${i}, the expected row index is ${expectedRowIndex}, not ${actualRowIndex}.`);
+                }
+            });
+
+            test(`with ${qub.escapeAndQuote("abc\nd")}`, () => {
+                const document: csv.Document = csv.parse("abc\nd");
+                assert.deepStrictEqual(document.getRowIndex(undefined), undefined);
+                assert.deepStrictEqual(document.getRowIndex(null), undefined);
+                for (let i = -1; i <= document.toString().length + 1; ++i) {
+                    const actualRowIndex: number = document.getRowIndex(i);
+                    const expectedRowIndex: number =
+                        0 <= i && i <= 3 ? 0 :
+                            4 <= i && i <= 5 ? 1 :
+                                undefined;
+                    assert.deepStrictEqual(actualRowIndex, expectedRowIndex, `For characterIndex ${i}, the expected row index is ${expectedRowIndex}, not ${actualRowIndex}.`);
+                }
+            });
+        });
     });
 
     suite("parseToken()", () => {
