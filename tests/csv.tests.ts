@@ -488,6 +488,23 @@ suite("csv", () => {
                 }
             });
         });
+
+        suite(`format()`, () => {
+            function formatTest(text: string, expectedFormattedText: string = text): void {
+                test(`with ${qub.escapeAndQuote(text)}`, () => {
+                    const document: csv.Document = csv.parse(text);
+                    assert.deepStrictEqual(document.format(), expectedFormattedText);
+                });
+            }
+
+            formatTest(undefined, "");
+            formatTest(null, "");
+            formatTest("");
+            formatTest(",");
+            formatTest("hello");
+            formatTest("a, b , c,d");
+            formatTest("a,b,c,d\n e ,f  , g,h  ", "a  ,b  ,c ,d  \n e ,f  , g,h  ");
+        });
     });
 
     suite("parseToken()", () => {
