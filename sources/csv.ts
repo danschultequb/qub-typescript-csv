@@ -7,6 +7,16 @@ export class Token {
     constructor(private _lexes: qub.Iterable<qub.Lex>, private _isSeparator: boolean) {
     }
 
+    public getStartIndex(): number {
+        const firstLex: qub.Lex = this._lexes ? this._lexes.first() : undefined;
+        return firstLex ? firstLex.startIndex : undefined;
+    }
+
+    public getAfterEndIndex(): number {
+        const lastLex: qub.Lex = this._lexes ? this._lexes.last() : undefined;
+        return lastLex ? lastLex.afterEndIndex : undefined;
+    }
+
     /**
      * Is this token a separator within a row. Typically in a CSV this is a comma, but the parse can
      * be configured so that this can be a semi-colon (;), a tab (\t), or a vertical bar (|).
@@ -42,6 +52,64 @@ export class Row {
     private _cells: qub.Indexable<Token>;
 
     constructor(private _tokens: qub.Indexable<Token>) {
+    }
+
+    public endsWithNewLine(): boolean {
+        let result: boolean = false;
+        if (this._tokens) {
+            const lastToken: Token = this._tokens.last();
+            if (lastToken) {
+                result = lastToken.isNewLine();
+            }
+        }
+        return result;
+    }
+
+    public getStartIndex(): number {
+        const firstToken: Token = this._tokens ? this._tokens.first() : undefined;
+        return firstToken ? firstToken.getStartIndex() : undefined;
+    }
+
+    public getAfterEndIndex(): number {
+        const lastToken: Token = this._tokens ? this._tokens.last() : undefined;
+        return lastToken ? lastToken.getAfterEndIndex() : undefined;
+    }
+
+    public getColumnIndex(characterIndex: number): number {
+        let result: number;
+
+        if (qub.isDefined(characterIndex)) {
+            const rowStartIndex: number = this.getStartIndex();
+            if (!qub.isDefined(rowStartIndex)) {
+                if (characterIndex === 0) {
+                    result = 0;
+                }
+            }
+            else if (rowStartIndex <= characterIndex && characterIndex <= this.getAfterEndIndex()) {
+                let columnIndex: number = 0;
+                for (const token of this._tokens) {
+                    if (!token.isSeparator()) {
+                        if (!token.isNewLine() && characterIndex <= token.getAfterEndIndex()) {
+                            result = columnIndex;
+                            break;
+                        }
+                    }
+                    else if (characterIndex <= token.getStartIndex()) {
+                        result = columnIndex;
+                        break;
+                    }
+                    else {
+                        ++columnIndex;
+                        if (characterIndex === token.getAfterEndIndex()) {
+                            result = columnIndex;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -238,6 +306,51 @@ export class Document {
      */
     public getColumnCount(): number {
         return this.getColumns().getCount();
+    }
+
+    /**
+     * Get the index of the row that contains the characterIndex, or undefined if no row contains
+     * the provided characterIndex.
+     * @param characterIndex The character index within a document.
+     */
+    public getRowIndex(characterIndex: number): number {
+        let result: number;
+
+        if (qub.isDefined(characterIndex) && 0 <= characterIndex) {
+            if (characterIndex === 0) {
+                result = 0;
+            }
+            else {
+                let rowIndex: number = 0;
+                for (const row of this.getRows()) {
+                    const rowEndsWithNewLine: boolean = row.endsWithNewLine();
+                    const rowAfterEndIndex: number = row.getAfterEndIndex();
+
+                    if (rowEndsWithNewLine) {
+                        if (characterIndex < rowAfterEndIndex) {
+                            result = rowIndex;
+                            break;
+                        }
+                        else { 
+                            ++rowIndex;
+                            if (characterIndex === rowAfterEndIndex) {
+                                result = rowIndex;
+                                break;
+                            }
+                        }
+                    }
+                    else if (characterIndex <= rowAfterEndIndex) {
+                        result = rowIndex;
+                        break;
+                    }
+                    else {
+                        ++rowIndex;
+                    }
+                }
+            }
+        }
+
+        return result;
     }
 
     /**
