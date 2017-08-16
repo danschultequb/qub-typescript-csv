@@ -1,3 +1,8 @@
+### 1.1.2 (2017-08-16)
+
+- Properly parse double quotes within a cell
+- Add error messages for unfinished quotes within a cell
+
 ### 1.1.1 (2017-08-15)
 
 - Add functions for getting the column index and row index from a character index.

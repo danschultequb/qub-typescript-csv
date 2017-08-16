@@ -1,5 +1,17 @@
 import * as qub from "qub";
 
+function addIssue(issues: qub.List<qub.Issue>, toAdd: qub.Issue): void {
+    if (issues) {
+        issues.add(toAdd);
+    }
+}
+
+export class Issues {
+    public static missingClosingQuote(span: qub.Span): qub.Issue {
+        return qub.Error(`Missing closing quote (").`, span);
+    }
+}
+
 /**
  * An individual token of a row. This can be either a cell, a comma, or a new line.
  */
@@ -331,7 +343,7 @@ export class Document {
                             result = rowIndex;
                             break;
                         }
-                        else { 
+                        else {
                             ++rowIndex;
                             if (characterIndex === rowAfterEndIndex) {
                                 result = rowIndex;
@@ -365,7 +377,7 @@ export class Document {
  * Parse a Token from the provided stream of lexes.
  * @param lexes The stream of lexes that the Token will be parsed from.
  */
-export function parseToken(lexes: qub.Iterator<qub.Lex>): Token {
+export function parseToken(lexes: qub.Iterator<qub.Lex>, issues: qub.List<qub.Issue>): Token {
     if (!lexes.hasStarted()) {
         lexes.next();
     }
@@ -396,6 +408,38 @@ export function parseToken(lexes: qub.Iterator<qub.Lex>): Token {
                 tokenFinished = true;
                 break;
 
+            case qub.LexType.DoubleQuote:
+                isCell = true;
+                const startQuote: qub.Lex = currentLex;
+                tokenLexes.add(startQuote);
+                lexes.next();
+                let quoteFinished: boolean = false;
+                while (lexes.hasCurrent() && !quoteFinished) {
+                    switch (lexes.getCurrent().getType()) {
+                        case qub.LexType.DoubleQuote:
+                            tokenLexes.add(lexes.takeCurrent());
+                            let oddQuoteCount: boolean = true;
+                            while (lexes.hasCurrent() && lexes.getCurrent().getType() === qub.LexType.DoubleQuote) {
+                                tokenLexes.add(lexes.takeCurrent());
+                                oddQuoteCount = !oddQuoteCount;
+                            }
+
+                            if (oddQuoteCount) {
+                                quoteFinished = true;
+                            }
+                            break;
+
+                        default:
+                            tokenLexes.add(lexes.takeCurrent());
+                            break;
+                    }
+                }
+
+                if (!quoteFinished) {
+                    addIssue(issues, Issues.missingClosingQuote(new qub.Span(startQuote.startIndex, tokenLexes.last().afterEndIndex - startQuote.startIndex)));
+                }
+                break;
+
             default:
                 isCell = true;
                 tokenLexes.add(currentLex);
@@ -407,7 +451,7 @@ export function parseToken(lexes: qub.Iterator<qub.Lex>): Token {
     return new Token(tokenLexes, isSeparator);
 }
 
-export function parseRow(lexes: qub.Iterator<qub.Lex>): Row {
+export function parseRow(lexes: qub.Iterator<qub.Lex>, issues: qub.List<qub.Issue>): Row {
     if (!lexes.hasStarted()) {
         lexes.next();
     }
@@ -416,7 +460,7 @@ export function parseRow(lexes: qub.Iterator<qub.Lex>): Row {
     let rowFinished: boolean = false;
     while (lexes.hasCurrent() && !rowFinished) {
 
-        const token: Token = parseToken(lexes);
+        const token: Token = parseToken(lexes, issues);
         if (token.isNewLine()) {
             rowFinished = true;
         }
@@ -431,12 +475,12 @@ export function parseRow(lexes: qub.Iterator<qub.Lex>): Row {
  * Parse a CSV document from the provided documentText.
  * @param documentText The document text to parse.
  */
-export function parse(documentText: string): Document {
+export function parse(documentText: string, issues?: qub.List<qub.Issue>): Document {
     const lexer = new qub.Lexer(documentText, 0);
 
     const rows = new qub.ArrayList<Row>();
     do {
-        rows.add(parseRow(lexer));
+        rows.add(parseRow(lexer, issues));
     }
     while (lexer.hasCurrent());
 

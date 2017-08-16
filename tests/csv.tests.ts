@@ -78,8 +78,8 @@ suite("csv", () => {
     });
 
     suite("Row", () => {
-        function parseToken(text: string, startIndex: number = 0): csv.Token {
-            return csv.parseToken(parseQubLexes(text, startIndex).iterate());
+        function parseToken(text: string, startIndex: number = 0, issues?: qub.List<qub.Issue>): csv.Token {
+            return csv.parseToken(parseQubLexes(text, startIndex).iterate(), issues);
         }
 
         function getRowCellsAsStrings(row: csv.Row): string[] {
@@ -251,7 +251,6 @@ suite("csv", () => {
         }
 
         test("with undefined document", () => {
-            const document: csv.Document = csv.parse("");
             const column = new csv.Column(undefined, 2);
             assert.deepStrictEqual(column.getCell(-1), undefined);
             assert.deepStrictEqual(column.getCell(0), undefined);
@@ -345,8 +344,8 @@ suite("csv", () => {
     });
 
     suite("Document", () => {
-        function parseRow(text: string, startIndex: number = 0): csv.Row {
-            return csv.parseRow(parseQubLexes(text, startIndex).iterate());
+        function parseRow(text: string, startIndex: number = 0, issues?: qub.List<qub.Issue>): csv.Row {
+            return csv.parseRow(parseQubLexes(text, startIndex).iterate(), issues);
         }
 
         function getRowsAsStrings(document: csv.Document): string[] {
@@ -491,11 +490,23 @@ suite("csv", () => {
     });
 
     suite("parseToken()", () => {
-        function parseTokenTest(text: string, expectedTokenText: string = text, expectedLex?: qub.Lex): void {
+        function parseTokenTest(text: string, expectedTokenText: string = text, expectedLex?: qub.Lex, expectedIssues: qub.Issue[] = []): void {
             test(`with ${qub.escapeAndQuote(text)}`, () => {
                 const lexes = new qub.Lexer(text);
 
-                const token: csv.Token = csv.parseToken(lexes);
+                const actualIssues = new qub.ArrayList<qub.Issue>();
+                const token: csv.Token = csv.parseToken(lexes, actualIssues);
+                assert.deepStrictEqual(token.toString(), expectedTokenText);
+
+                assert.deepStrictEqual(lexes.getCurrent(), expectedLex);
+
+                assert.deepStrictEqual(actualIssues.toArray(), expectedIssues);
+            });
+
+            test(`with ${qub.escapeAndQuote(text)} and undefined issues`, () => {
+                const lexes = new qub.Lexer(text);
+
+                const token: csv.Token = csv.parseToken(lexes, undefined);
                 assert.deepStrictEqual(token.toString(), expectedTokenText);
 
                 assert.deepStrictEqual(lexes.getCurrent(), expectedLex);
@@ -514,27 +525,54 @@ suite("csv", () => {
         parseTokenTest("\n500", "\n", qub.Digits("500", 1));
         parseTokenTest("\r\n");
         parseTokenTest("\r\n ", "\r\n", qub.Space(2));
+        parseTokenTest(`"`, `"`, undefined, [csv.Issues.missingClosingQuote(new qub.Span(0, 1))]);
+        parseTokenTest(`"",`, `""`, qub.Comma(2));
+        parseTokenTest(`","`, `","`);
+        parseTokenTest(`""\n`, `""`, qub.NewLine(2));
+        parseTokenTest(`"\n"`, `"\n"`);
+        parseTokenTest(`"He said, ""Hi!""",`, `"He said, ""Hi!"""`, qub.Comma(18));
+        parseTokenTest(`""",`, `""",`, undefined, [csv.Issues.missingClosingQuote(new qub.Span(0, 4))]);
+        parseTokenTest(`"""",`, `""""`, qub.Comma(4));
+        parseTokenTest(`  " "abc, `, `  " "abc`, qub.Comma(8));
     });
 
     suite("parseRow()", () => {
-        function parseRowTest(text: string, expectedRowText: string = text, expectedLex?: qub.Lex): void {
+        function parseRowTest(text: string, expectedRowText: string = text, expectedLex?: qub.Lex, expectedIssues: qub.Issue[] = []): void {
             test(`with ${qub.escapeAndQuote(text)}`, () => {
                 const lexes = new qub.Lexer(text);
 
-                const row: csv.Row = csv.parseRow(lexes);
+                const actualIssues = new qub.ArrayList<qub.Issue>();
+                const row: csv.Row = csv.parseRow(lexes, actualIssues);
                 assert.deepStrictEqual(row.toString(), expectedRowText);
 
                 assert.deepStrictEqual(lexes.getCurrent(), expectedLex);
+
+                assert.deepStrictEqual(actualIssues.toArray(), expectedIssues);
+            });
+
+            test(`with ${qub.escapeAndQuote(text)}`, () => {
+                const lexes = new qub.Lexer(text);
+
+                const actualIssues = new qub.ArrayList<qub.Issue>();
+                const row: csv.Row = csv.parseRow(lexes, actualIssues);
+                assert.deepStrictEqual(row.toString(), expectedRowText);
+
+                assert.deepStrictEqual(lexes.getCurrent(), expectedLex);
+
+                assert.deepStrictEqual(actualIssues.toArray(), expectedIssues);
             });
 
             test(`with ${qub.escapeAndQuote(text)} with started Lex iterator`, () => {
                 const lexes = new qub.Lexer(text);
                 lexes.next();
 
-                const row: csv.Row = csv.parseRow(lexes);
+                const actualIssues = new qub.ArrayList<qub.Issue>();
+                const row: csv.Row = csv.parseRow(lexes, actualIssues);
                 assert.deepStrictEqual(row.toString(), expectedRowText);
 
                 assert.deepStrictEqual(lexes.getCurrent(), expectedLex);
+
+                assert.deepStrictEqual(actualIssues.toArray(), expectedIssues);
             });
         }
 
