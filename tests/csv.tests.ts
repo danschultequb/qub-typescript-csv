@@ -257,6 +257,7 @@ suite("csv", () => {
             assert.deepStrictEqual(column.getCell(1), undefined);
             assert.deepStrictEqual(column.getCellCount(), 0);
             assert.deepStrictEqual(column.toString(), "");
+            assert.deepStrictEqual(column.getWidth(), 0);
         });
 
         test("with undefined columnIndex", () => {
@@ -268,6 +269,7 @@ suite("csv", () => {
             assert.deepStrictEqual(column.getCell(1), undefined);
             assert.deepStrictEqual(column.getCellCount(), 0);
             assert.deepStrictEqual(column.toString(), "");
+            assert.deepStrictEqual(column.getWidth(), 0);
         });
 
         test("with -1 columnIndex", () => {
@@ -279,6 +281,7 @@ suite("csv", () => {
             assert.deepStrictEqual(column.getCell(1), undefined);
             assert.deepStrictEqual(column.getCellCount(), 0);
             assert.deepStrictEqual(column.toString(), "");
+            assert.deepStrictEqual(column.getWidth(), 0);
         });
 
         test("with 0 columnIndex and empty document", () => {
@@ -290,6 +293,7 @@ suite("csv", () => {
             assert.deepStrictEqual(column.getCell(1), undefined);
             assert.deepStrictEqual(column.getCellCount(), 0);
             assert.deepStrictEqual(column.toString(), "");
+            assert.deepStrictEqual(column.getWidth(), 0);
         });
 
         test("with 0 columnIndex and non-empty document", () => {
@@ -303,6 +307,7 @@ suite("csv", () => {
             assert.deepStrictEqual(column.getCell(3), undefined);
             assert.deepStrictEqual(column.getCellCount(), 3);
             assert.deepStrictEqual(column.toString(), "a,1, ");
+            assert.deepStrictEqual(column.getWidth(), 1);
         });
 
         test("with 1 columnIndex and non-empty document", () => {
@@ -316,6 +321,7 @@ suite("csv", () => {
             assert.deepStrictEqual(column.getCell(3), undefined);
             assert.deepStrictEqual(column.getCellCount(), 3);
             assert.deepStrictEqual(column.toString(), "b,2,\t");
+            assert.deepStrictEqual(column.getWidth(), 1);
         });
 
         test("with 2 columnIndex and non-empty document", () => {
@@ -329,6 +335,7 @@ suite("csv", () => {
             assert.deepStrictEqual(column.getCell(3), undefined);
             assert.deepStrictEqual(column.getCellCount(), 3);
             assert.deepStrictEqual(column.toString(), "c,3,  ");
+            assert.deepStrictEqual(column.getWidth(), 2);
         });
 
         test("with 3 columnIndex and non-empty document", () => {
@@ -340,6 +347,34 @@ suite("csv", () => {
             assert.deepStrictEqual(column.getCell(1), undefined);
             assert.deepStrictEqual(column.getCellCount(), 0);
             assert.deepStrictEqual(column.toString(), "");
+            assert.deepStrictEqual(column.getWidth(), 0);
+        });
+
+        test("with 0 columnIndex and non-empty document with only one row with matching cell", () => {
+            const document: csv.Document = csv.parse("\na\n");
+            const column = new csv.Column(document, 0);
+            assert.deepStrictEqual(getColumnCellsAsStrings(column), [undefined,"a",undefined]);
+            assert.deepStrictEqual(column.getCell(-1), undefined);
+            assert.deepStrictEqual(column.getCell(0), undefined);
+            assert.deepStrictEqual(column.getCell(1).toString(), "a");
+            assert.deepStrictEqual(column.getCell(2), undefined);
+            assert.deepStrictEqual(column.getCell(3), undefined);
+            assert.deepStrictEqual(column.getCellCount(), 3);
+            assert.deepStrictEqual(column.toString(), ",a,");
+            assert.deepStrictEqual(column.getWidth(), 1);
+        });
+
+        test("with 1 columnIndex and non-empty document with only one row with matching cell", () => {
+            const document: csv.Document = csv.parse("a\nb,c\nd");
+            const column = new csv.Column(document, 1);
+            assert.deepStrictEqual(getColumnCellsAsStrings(column), [undefined,"c",undefined]);
+            assert.deepStrictEqual(column.getCell(-1), undefined);
+            assert.deepStrictEqual(column.getCell(0), undefined);
+            assert.deepStrictEqual(column.getCell(1).toString(), "c");
+            assert.deepStrictEqual(column.getCell(2), undefined);
+            assert.deepStrictEqual(column.getCellCount(), 3);
+            assert.deepStrictEqual(column.toString(), ",c,");
+            assert.deepStrictEqual(column.getWidth(), 1);
         });
     });
 
@@ -433,6 +468,7 @@ suite("csv", () => {
         documentTest("  ");
         documentTest("abc");
         documentTest("1234");
+        documentTest("\na\n");
 
         suite(`getRowIndex()`, () => {
             test(`with ""`, () => {
@@ -486,6 +522,23 @@ suite("csv", () => {
                     assert.deepStrictEqual(actualRowIndex, expectedRowIndex, `For characterIndex ${i}, the expected row index is ${expectedRowIndex}, not ${actualRowIndex}.`);
                 }
             });
+        });
+
+        suite(`format()`, () => {
+            function formatTest(text: string, expectedFormattedText: string = text): void {
+                test(`with ${qub.escapeAndQuote(text)}`, () => {
+                    const document: csv.Document = csv.parse(text);
+                    assert.deepStrictEqual(document.format(), expectedFormattedText);
+                });
+            }
+
+            formatTest(undefined, "");
+            formatTest(null, "");
+            formatTest("");
+            formatTest(",");
+            formatTest("hello");
+            formatTest("a, b , c,d");
+            formatTest("a,b,c,d\n e ,f  , g,h  ", "a  ,b  ,c ,d  \n e ,f  , g,h  ");
         });
     });
 

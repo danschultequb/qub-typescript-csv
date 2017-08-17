@@ -67,11 +67,15 @@ export class Row {
     }
 
     public endsWithNewLine(): boolean {
-        let result: boolean = false;
+        return !!this.getNewLine();
+    }
+
+    public getNewLine(): string {
+        let result: string = undefined;
         if (this._tokens) {
             const lastToken: Token = this._tokens.last();
-            if (lastToken) {
-                result = lastToken.isNewLine();
+            if (lastToken && lastToken.isNewLine()) {
+                result = lastToken.toString();
             }
         }
         return result;
@@ -240,13 +244,27 @@ export class Column {
      */
     public toString(): string {
         let result: string = "";
+        let firstCell: boolean = true;
         for (const cell of this.getCells()) {
-            if (result) {
+            if (!firstCell) {
                 result += ",";
             }
-            result += cell.toString();
+            else {
+                firstCell = false;
+            }
+            result += cell ? cell.toString() : "";
         }
         return result;
+    }
+
+    /**
+     * Get how wide (in characters) this Column is.
+     */
+    public getWidth(): number {
+        const columnWidth: number = this.getCells()
+            .map((columnCell: Token) => columnCell ? columnCell.toString().length : 0)
+            .maximum();
+        return columnWidth ? columnWidth : 0;
     }
 }
 
@@ -371,6 +389,36 @@ export class Document {
     public toString(): string {
         return qub.getCombinedText(this._rows);
     }
+
+    /**
+     * Get the formatted string representation of this Document.
+     */
+    public format(): string {
+        const columnWidths: qub.Indexable<number> = this.getColumns().map((column: Column) => column.getWidth());
+        let result: string = "";
+        for (const row of this.getRows()) {
+            const rowCellCount: number = row.getCellCount();
+            for (let i = 0; i < rowCellCount; ++i) {
+                const rowCellString: string = row.getCell(i).toString();
+                result += rowCellString;
+
+                const rowCellWidth: number = rowCellString.length;
+                const columnWidth: number = columnWidths.get(i);
+                if (rowCellWidth < columnWidth) {
+                    result += qub.repeat(" ", columnWidth - rowCellWidth);
+                }
+                if (i < rowCellCount - 1) {
+                    result += ","
+                }
+            }
+
+            const rowNewLine: string = row.getNewLine();
+            if (rowNewLine) {
+                result += rowNewLine;
+            }
+        }
+        return result;
+    }
 }
 
 /**
@@ -483,6 +531,10 @@ export function parse(documentText: string, issues?: qub.List<qub.Issue>): Docum
         rows.add(parseRow(lexer, issues));
     }
     while (lexer.hasCurrent());
+
+    if (!rows.any() || rows.last().endsWithNewLine()) {
+        rows.add(new Row(new qub.ArrayList<Token>()));
+    }
 
     return new Document(rows);
 }
