@@ -198,8 +198,6 @@ export class Row {
  * A column of Tokens within a CSV document.
  */
 export class Column {
-    private _cells: qub.Indexable<Token>;
-
     constructor(private _document: Document, private _columnIndex: number) {
     }
 
@@ -208,18 +206,15 @@ export class Column {
      * then undefined will appear for that row's cell.
      */
     public getCells(): qub.Indexable<Token> {
-        if (!this._cells) {
-            const cells = new qub.ArrayList<Token>();
+        const cells = new qub.ArrayList<Token>();
 
-            if (this._document && qub.isDefined(this._columnIndex) && 0 <= this._columnIndex && this._columnIndex < this._document.getColumnCount()) {
-                for (const row of this._document.getRows()) {
-                    cells.add(row.getCell(this._columnIndex));
-                }
+        if (this._document && qub.isDefined(this._columnIndex) && 0 <= this._columnIndex && this._columnIndex < this._document.getColumnCount()) {
+            for (const row of this._document.getRows()) {
+                cells.add(row.getCell(this._columnIndex));
             }
-
-            this._cells = cells;
         }
-        return this._cells;
+
+        return cells;
     }
 
     /**
@@ -272,7 +267,7 @@ export class Column {
  * A parsed CSV document.
  */
 export class Document {
-    private _columns: qub.Indexable<Column>;
+    private _columnCount: number;
 
     constructor(private _rows: qub.Indexable<Row>) {
         if (!_rows) {
@@ -307,17 +302,14 @@ export class Document {
      * Get the columns that make up this Document.
      */
     public getColumns(): qub.Indexable<Column> {
-        if (!this._columns) {
-            const columns = new qub.ArrayList<Column>();
+        const columns = new qub.ArrayList<Column>();
 
-            const columnCount: number = this._rows.map((row: Row) => row.getCellCount()).maximum();
-            for (let i = 0; i < columnCount; ++i) {
-                columns.add(new Column(this, i));
-            }
-
-            this._columns = columns;
+        const columnCount: number = this.getColumnCount();
+        for (let i = 0; i < columnCount; ++i) {
+            columns.add(new Column(this, i));
         }
-        return this._columns;
+
+        return columns;
     }
 
     /**
@@ -335,7 +327,10 @@ export class Document {
      * returned.
      */
     public getColumnCount(): number {
-        return this.getColumns().getCount();
+        if (!qub.isDefined(this._columnCount)) {
+            this._columnCount = this._rows.map((row: Row) => row.getCellCount()).maximum();
+        }
+        return this._columnCount;
     }
 
     /**

@@ -353,7 +353,7 @@ suite("csv", () => {
         test("with 0 columnIndex and non-empty document with only one row with matching cell", () => {
             const document: csv.Document = csv.parse("\na\n");
             const column = new csv.Column(document, 0);
-            assert.deepStrictEqual(getColumnCellsAsStrings(column), [undefined,"a",undefined]);
+            assert.deepStrictEqual(getColumnCellsAsStrings(column), [undefined, "a", undefined]);
             assert.deepStrictEqual(column.getCell(-1), undefined);
             assert.deepStrictEqual(column.getCell(0), undefined);
             assert.deepStrictEqual(column.getCell(1).toString(), "a");
@@ -367,7 +367,7 @@ suite("csv", () => {
         test("with 1 columnIndex and non-empty document with only one row with matching cell", () => {
             const document: csv.Document = csv.parse("a\nb,c\nd");
             const column = new csv.Column(document, 1);
-            assert.deepStrictEqual(getColumnCellsAsStrings(column), [undefined,"c",undefined]);
+            assert.deepStrictEqual(getColumnCellsAsStrings(column), [undefined, "c", undefined]);
             assert.deepStrictEqual(column.getCell(-1), undefined);
             assert.deepStrictEqual(column.getCell(0), undefined);
             assert.deepStrictEqual(column.getCell(1).toString(), "c");
@@ -654,5 +654,41 @@ suite("csv", () => {
         parseTest("");
         parseTest("   ");
         parseTest("A,B,C,D\n1,2,3,4\n,,,")
+
+        suite("stress test", () => {
+            function parseStressTest(rows: number, columns: number, cellText: string = "hello"): void {
+                test(`with ${rows}x${columns} cell document`, () => {
+                    let text: string = "";
+                    for (let row = 0; row < rows; ++row) {
+                        for (let column = 0; column < columns; ++column) {
+                            if (column > 0) {
+                                text += ",";
+                            }
+                            text += cellText;
+                        }
+    
+                        if (row < columns - 1) {
+                            text += "\n";
+                        }
+                    }
+    
+                    const document: csv.Document = csv.parse(text);
+                    assert.deepStrictEqual(document.toString(), text);
+                });
+            }
+            
+            parseStressTest(1, 1);
+            parseStressTest(10, 10);
+            parseStressTest(10, 100);
+            parseStressTest(10, 1000);
+            parseStressTest(100, 1);
+            parseStressTest(100, 10);
+            parseStressTest(100, 100);
+            parseStressTest(100, 1000);
+            parseStressTest(1000, 1);
+            parseStressTest(1000, 10);
+            parseStressTest(1000, 100);
+            parseStressTest(1000, 1000);
+        });
     });
 });
