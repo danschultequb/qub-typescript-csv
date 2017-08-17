@@ -1,6 +1,6 @@
 {
   "name": "qub-csv",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A collection of classes and functions for interacting with CSV documents",
   "main": "output/sources/csv",
   "typings": "output/sources/csv",
@@ -41,7 +41,7 @@
   "homepage": "https://github.com/danschultequb/qub-typescript-csv#readme",
   "devDependencies": {
     "@types/mocha": "2.2.41",
-    "@types/node": "8.0.22",
+    "@types/node": "8.0.23",
     "coveralls": "2.13.1",
     "mocha": "3.5.0",
     "nyc": "11.1.0",
@@ -50,6 +50,6 @@
     "typescript": "2.4.2"
   },
   "dependencies": {
-    "qub": "1.4.0"
+    "qub": "1.4.1"
   }
 }

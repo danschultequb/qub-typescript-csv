@@ -232,11 +232,15 @@ export class Column {
      */
     public toString(): string {
         let result: string = "";
+        let firstCell: boolean = true;
         for (const cell of this.getCells()) {
-            if (result) {
+            if (!firstCell) {
                 result += ",";
             }
-            result += cell.toString();
+            else {
+                firstCell = false;
+            }
+            result += cell ? cell.toString() : "";
         }
         return result;
     }
@@ -378,7 +382,7 @@ export class Document {
      * Get the formatted string representation of this Document.
      */
     public format(): string {
-        const columnWidths: number[] = this.getColumns().map((column: Column) => column.getWidth()).toArray();
+        const columnWidths: qub.Indexable<number> = this.getColumns().map((column: Column) => column.getWidth());
         let result: string = "";
         for (const row of this.getRows()) {
             const rowCellCount: number = row.getCellCount();
@@ -387,7 +391,7 @@ export class Document {
                 result += rowCellString;
 
                 const rowCellWidth: number = rowCellString.length;
-                const columnWidth: number = columnWidths[i];
+                const columnWidth: number = columnWidths.get(i);
                 if (rowCellWidth < columnWidth) {
                     result += qub.repeat(" ", columnWidth - rowCellWidth);
                 }
@@ -483,6 +487,10 @@ export function parse(documentText: string): Document {
         rows.add(parseRow(lexer));
     }
     while (lexer.hasCurrent());
+
+    if (!rows.any() || rows.last().endsWithNewLine()) {
+        rows.add(new Row(new qub.ArrayList<Token>()));
+    }
 
     return new Document(rows);
 }
